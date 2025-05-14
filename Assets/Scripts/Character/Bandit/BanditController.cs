@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class BanditController : MonoBehaviour
@@ -14,8 +13,7 @@ public class BanditController : MonoBehaviour
     Vector3 localScale;
     bool isFacingRight = true;
     Rigidbody2D rb;
-    GameObject hello;
-    Transform wall;
+    EnvironmentCheck wall;
     Animator animator;
     Transform ground;
     [HideInInspector] public bool isFighting = false;
@@ -25,10 +23,9 @@ public class BanditController : MonoBehaviour
     float horizontal;
     state status;
     IdleStatus idleStatus;
-    bool canSearch = true;
-    bool walkToHome;
+
     Vector3 destination;
-    Transform wall2;
+    EnvironmentCheck wall2;
     float amount;
     CharacterEvent characterEvent;
     Vector3 distanceToHome;
@@ -55,8 +52,8 @@ public class BanditController : MonoBehaviour
 
     void Start()
     {
-        wall = transform.Find("WallCheck").transform;
-        wall2= transform.Find("WallCheck2").transform;
+        wall = transform.Find("WallCheck").GetComponent<EnvironmentCheck>();
+        wall2 = transform.Find("WallCheck2").GetComponent<EnvironmentCheck>();
         ground = transform.Find("GroundCheck").transform;
         animator = transform.GetComponentInChildren<Animator>();
         rb = gameObject.GetComponent<Rigidbody2D>();
@@ -74,7 +71,7 @@ public class BanditController : MonoBehaviour
         {
             _ground = GroundCheck();
             _wall = Walled();
-          
+
             animator.SetBool("Grounded", _ground);
 
             if (distance.x > 0.1)
@@ -85,21 +82,21 @@ public class BanditController : MonoBehaviour
                 horizontal = 0;
             if (enemy.isImmobile)
                 status = state.Immobilized;
-            else if (isFighting&&!enemy.isImmobile)
+            else if (isFighting && !enemy.isImmobile)
                 status = state.Fighting;
-            else if (isFollowing&& !enemy.isImmobile)
+            else if (isFollowing && !enemy.isImmobile)
                 status = state.Moving;
-            else 
+            else
                 status = state.idle;
-            if (canSearch)
-                idleStatus = IdleStatus.NewHome;
-            else if (!canSearch && walkToHome)
-                idleStatus = IdleStatus.Tohome;
-            
+            /*  if (canSearch)
+                  idleStatus = IdleStatus.NewHome;
+              else if (!canSearch && walkToHome)
+                  idleStatus = IdleStatus.Tohome;
 
-            else if (!canSearch && !walkToHome)
-                idleStatus = IdleStatus.Waunder;
-            
+
+              else if (!canSearch && !walkToHome)
+                  idleStatus = IdleStatus.Waunder;
+              */
         }
     }
 
@@ -110,7 +107,7 @@ public class BanditController : MonoBehaviour
             switch (status)
             {
                 case state.Moving:
-                   
+
                     MoveTowardsPlayer();
                     break;
                 case state.idle:
@@ -119,10 +116,10 @@ public class BanditController : MonoBehaviour
                     break;
                 case state.Fighting:
                     playRun();
-                    Destroy(hello);
-                    canSearch = true;
+                    idleStatus = IdleStatus.NewHome;
                     rb.velocity = Vector3.zero;
                     enemy.startAttack();
+
                     break;
                 case state.Immobilized:
                     animator.SetInteger("AnimState", 0);
@@ -133,9 +130,9 @@ public class BanditController : MonoBehaviour
             if (isFacingRight && horizontal < 0f || !isFacingRight && horizontal > 0f)
                 Flip();
         }
-        else            
+        else
             rb.velocity = Vector3.zero;
-        
+
     }
     public void MoveTowardsPlayer()
     {
@@ -149,13 +146,8 @@ public class BanditController : MonoBehaviour
 
         home = transform.position;
         destination = Vector3.zero;
-        canSearch = false;
-        hello = new GameObject("hello");
-        hello.transform.position = home;
-
-
     }
-   
+
 
     void IdleBehaviour()
     {
@@ -163,6 +155,7 @@ public class BanditController : MonoBehaviour
         {
             case IdleStatus.NewHome:
                 NewHome();
+                idleStatus = IdleStatus.Waunder;
                 break;
             case IdleStatus.Waunder:
                 if (canWander)
@@ -170,29 +163,23 @@ public class BanditController : MonoBehaviour
 
 
                 WaunderValues();
-                if (_wall)
-                    walkToHome = true;
-                if (Math.Abs(distanceToHome.x) >= homeDistance)
-                    walkToHome = true;
+                if (_wall || Math.Abs(distanceToHome.x) >= homeDistance)
+                    idleStatus = IdleStatus.Tohome;
                 break;
             case IdleStatus.Tohome:
                 HomeDistance();
                 destination = Vector3.zero;
                 distance = distanceToHome;
                 MoveTowardsPlayer();
-                if (Math.Round(distance.x) == 0)
-                {
-                    canWander = false;
-                    walkToHome = false;
-                   
-                }
+                if (Math.Abs(distance.x) <= 0.1f)
+                    idleStatus = IdleStatus.Waunder;
                 break;
 
         }
     }
     public void parryDist(Vector2 dist)
     {
-        rb.velocity=Vector3.zero;
+        rb.velocity = Vector3.zero;
         rb.velocity = new Vector2(dist.x * -facing, dist.y);
     }
     void HomeDistance()
@@ -208,15 +195,15 @@ public class BanditController : MonoBehaviour
     }
     void Wander()
     {
-        if (Math.Round(distance.x) == 0)
+        if (Math.Abs(distance.x) <= 0.1f)
         {
             amount = UnityEngine.Random.Range(-waunderDistance, waunderDistance);
             destination = new Vector3(transform.position.x + amount, transform.position.y, transform.position.z);
 
         }
-       
+
         StartCoroutine(WaunderTime());
-        
+
 
     }
     IEnumerator WaunderTime()
@@ -241,9 +228,9 @@ public class BanditController : MonoBehaviour
     bool Walled()
     {
         if (isFacingRight)
-            return Physics2D.OverlapCircle(wall.position, .01f, canWalk);
+            return wall.isTouching;
         else if (!isFacingRight)
-            return Physics2D.OverlapCircle(wall2.position, .01f, canWalk);
+            return wall2.isTouching;
         else
             return false;
     }
