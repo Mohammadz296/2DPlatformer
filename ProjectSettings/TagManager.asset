@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 2
+  tags:
+  - Ground
+  - Walls
+  - Enemy
+  - Grabbable
+  - Background
+  - Trail
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - trail
+  - Water
+  - UI
+  - player
+  - 
+  - enemy
+  - grabbable
+  - Ground
+  - 
+  - Slope
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Background
+    uniqueID: 824220965
+    locked: 0
+  - name: Ground
+    uniqueID: 911206427
+    locked: 0
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: Character
+    uniqueID: 3621726769
+    locked: 0
+  - name: UI
+    uniqueID: 536351667
+    locked: 0
