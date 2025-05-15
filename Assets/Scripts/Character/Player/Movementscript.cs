@@ -3,16 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Movementscript : MonoBehaviour
+public class Movementscript : CharacterMovement
 {
     [SerializeField] float speed;
     [SerializeField] float airSpeed;
-    [SerializeField] float maxMaxThreshold;
     [SerializeField] float wallG;
     [SerializeField] float rollTime;
-    [SerializeField] float gravityForce;
-    [SerializeField] float gravityMax;
-    [SerializeField] float maxHeightBoost;
     [SerializeField] float kayoteTime;
     [SerializeField] float acceleration;
     [SerializeField] float jumpBufferTime;
@@ -24,65 +20,58 @@ public class Movementscript : MonoBehaviour
     [SerializeField] float trailSpawnRate;
 
     [SerializeField] GameObject trail;
-    [SerializeField] LayerMask canWalk;
     [SerializeField] Vector2 wallJumpPower;
     [SerializeField] Vector2 dashForce;
 
-    [HideInInspector] public bool isRolling;
+    public bool isRolling { get; private set; }
     [HideInInspector] public float finalStamina;
-    [HideInInspector] public bool deflected;
+   public bool deflected { get; private set; }
 
 
-    Animator animator;
+    
     PlayerStats playerPrefs;
-    Rigidbody2D rb;
+
     CapsuleCollider2D bc;
     CircleCollider2D bc2;
     EnvironmentManager em;
-    CharacterEvent skin;
-    EnvironmentCheck groundCheck;
+
     Transform rollCheck;
-    EnvironmentCheck wallCheck;
-    EnvironmentCheck wallCheck2;
+ 
+
 
     RoofCheck[] roofChecks = new RoofCheck[8];
 
     bool _jump;
     bool _shift;
-    bool _ground;
     bool _slope;
     bool _wall;
     bool _s;
     bool _roll;
     bool _notJump;
 
-    bool wallSlide;
+
     bool wallJump;
     bool kayote;
     bool isDashing;
     bool isSliding;
-
-    bool isFacingRight = true;
-    bool canMax = true;
+  
     bool waitStamina = true;
     bool canRoof = true;
-    bool canJump = true;
+    
     bool canSpawnTrail = true;
 
-    public float jumpPower;
-    public float stamina;
-    public float rollForce;
+    [field: SerializeField] public float stamina { get; private set; }
+    [SerializeField] float rollForce;
 
     float rollTemp;
     float jumpDir;
-    float gravity;
-    float horizontal;
+
     float vertical;
     float kayoteTimeTemp;
     float dashTimeTemp;
     float drag;
     float timerTemp;
-    float facing;
+
 
     Vector2 slopeNormalPerp;
     List<InputBuffer> inputs = new();
@@ -134,13 +123,16 @@ public class Movementscript : MonoBehaviour
                 case State.jumping:
 
                     if (canJump)
+                    {
+                        RemoveInputBuff();              
                         Jump();
+                    }
                     if (canRoof)
                         RoofCheck(0);
 
                     RunAir();
                     if (rb.velocity.y > 0 && rb.velocity.y <= maxMaxThreshold && canMax)
-                        maxHeight();
+                        MaxHeight();
 
                     if (_ground && rb.velocity.y == 0)                   
                         CheckPosition();
@@ -178,7 +170,7 @@ public class Movementscript : MonoBehaviour
 
                     break;
                 case State.idle:
-                    idle();
+                    Idle();
                     if (!playerPrefs.click1)
                         Stamina(80f);
                     CheckPosition();
@@ -266,13 +258,14 @@ public class Movementscript : MonoBehaviour
     }
     void SetStart()
     {
-        animator = transform.Find("character").GetComponent<Animator>();
-        groundCheck = transform.Find("groundCheck").GetComponent<EnvironmentCheck>();
-        rollCheck = transform.Find("rollCheck").transform;
-        wallCheck = transform.Find("wallCheck").GetComponent<EnvironmentCheck>(); ;
-        wallCheck2 = transform.Find("wallCheck2").GetComponent<EnvironmentCheck>(); ;
-        em = transform.GetComponentInChildren<EnvironmentManager>();
-        skin = transform.Find("character").GetComponent<CharacterEvent>();
+        _transform = transform;
+        animator =_transform.Find("character").GetComponent<Animator>();
+        groundCheck = _transform.Find("groundCheck").GetComponent<EnvironmentCheck>();
+        rollCheck = _transform.Find("rollCheck").transform;
+        wallCheck = _transform.Find("wallCheck").GetComponent<EnvironmentCheck>(); ;
+        wallCheck2 = _transform.Find("wallCheck2").GetComponent<EnvironmentCheck>(); ;
+        em = _transform.GetComponentInChildren<EnvironmentManager>();
+        skin = _transform.Find("character").GetComponent<CharacterEvent>();
         bc = GetComponent<CapsuleCollider2D>();
         rb = GetComponent<Rigidbody2D>();
         playerPrefs = GetComponent<PlayerStats>();
@@ -290,7 +283,7 @@ public class Movementscript : MonoBehaviour
         timerTemp = staminaWaitTime;
 
         for (int i = 0; i < roofChecks.Length; i++)
-            roofChecks[i] = transform.Find("RoofHitCheck").gameObject.transform.GetChild(i).transform.GetComponent<RoofCheck>();
+            roofChecks[i] = _transform.Find("RoofHitCheck").gameObject.transform.GetChild(i).transform.GetComponent<RoofCheck>();
 
 
     }
@@ -316,7 +309,7 @@ public class Movementscript : MonoBehaviour
 
 
         if (isFacingRight && horizontal < 0f && !isRolling && !isSliding || !isFacingRight && horizontal > 0f && !isRolling && !isSliding)
-            flip();
+            Flip();
 
         animator.SetBool("Rolling", isRolling);
         animator.SetBool("Grounded", _ground);
@@ -331,7 +324,7 @@ public class Movementscript : MonoBehaviour
         _s = Input.GetKeyDown(KeyCode.S);
         _shift = Input.GetKeyDown(KeyCode.LeftShift);
 
-
+        _transform = transform;
         _slope = isSlope();
         _ground = groundCheck.isTouching || isSlope();
         _wall = isWalled();
@@ -365,7 +358,7 @@ public class Movementscript : MonoBehaviour
         else if (_ground && horizontal != 0 && _slope)
             status = State.sloping;
     }
-    void ResetBools()
+    protected override void ResetBools()
     {
         if(!_ground&&status==State.jumping)
         kayoteTimeTemp = 0;
@@ -384,26 +377,6 @@ public class Movementscript : MonoBehaviour
         rb.drag = drag;
     }
 
-    void idle()
-    {
-
-        ResetBools();
-        rb.gravityScale = gravity;
-        rb.velocity = Vector2.zero;
-        animator.SetInteger("AnimState", 0);
-        rb.bodyType = RigidbodyType2D.Kinematic;
-
-    }
-    void Jump()
-    {
-        RemoveInputBuff();
-        rb.bodyType = RigidbodyType2D.Dynamic;
-        rb.velocity = new Vector2(rb.velocity.x, 0);
-        ResetBools();
-        rb.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
-        canJump = false;
-        animator.SetTrigger("Jump");
-    }
     void RemoveInputBuff()
     {
         StopCoroutine(InputBuffTimer());
@@ -423,7 +396,7 @@ public class Movementscript : MonoBehaviour
             inputs.Add(InputBuffer.jump);
             StartCoroutine(InputBuffTimer());
         }
-        if (_s)
+        if (_s&&_ground|| _s && _slope)
         {
             inputs.Add(InputBuffer.roll);
             StartCoroutine(InputBuffTimer());
@@ -439,24 +412,7 @@ public class Movementscript : MonoBehaviour
             inputBuff = InputBuffer.none;
 
     }
-    void maxHeight()
-    {
-        canMax = false;
-        rb.gravityScale = rb.gravityScale / 2;
-        rb.AddForce(Vector2.right * maxHeightBoost * horizontal);
-    }
-    void Falling()
-    {
-        wallSlide = false;
-        rb.bodyType = RigidbodyType2D.Dynamic;
-        incGravity();
-
-    }
-    void incGravity()
-    {
-        float targetSpeed = gravityMax - rb.gravityScale;
-        rb.gravityScale = Mathf.Clamp(rb.gravityScale + targetSpeed * Time.deltaTime * gravityForce, gravity, gravityMax);
-    }
+  
     void KayoteTime()
     {
         if (_ground)
@@ -473,12 +429,7 @@ public class Movementscript : MonoBehaviour
             kayote = false;
 
     }
-    void flip()
-    {
-        isFacingRight = !isFacingRight;
-        skin.flip();
-        facing = skin.facing;
-    }
+   
     void Roll()
     {
         Stamina(-1500f);
@@ -507,10 +458,10 @@ public class Movementscript : MonoBehaviour
     {
         RemoveInputBuff();
         if (facing != Math.Round(rb.velocity.normalized.x))
-            flip();
+            Flip();
         rb.bodyType = RigidbodyType2D.Dynamic;
         isSliding = true;
-        incGravity();
+        IncGravity();
     }
     void Run(float speedLerpThingy = 1)
     {
@@ -556,7 +507,7 @@ public class Movementscript : MonoBehaviour
     IEnumerator SpawnTrail()
     {
         canSpawnTrail = false;
-        Instantiate(trail, transform.position, Quaternion.identity);
+        Instantiate(trail, _transform.position, Quaternion.identity);
         yield return new WaitForSeconds(trailSpawnRate);
         canSpawnTrail = true;
     }
@@ -576,7 +527,7 @@ public class Movementscript : MonoBehaviour
         rb.velocity = Vector2.zero;
         rb.AddForce(new Vector2(rb.velocity.x + (jumpDir * wallJumpPower.x), wallJumpPower.y), ForceMode2D.Impulse);
         if (facing != jumpDir)
-            flip();
+            Flip();
         wallJump = true;
         yield return new WaitForSeconds(wallJumpTimer);
         wallJump = false;
@@ -607,13 +558,13 @@ public class Movementscript : MonoBehaviour
         if (roofChecks[start].roof && !roofChecks[start + 1].roof && !roofChecks[start + 2].roof && !roofChecks[start + 3].roof)
         {
             canRoof = false;
-            transform.Translate(.6f, 0, 0);
+            _transform.Translate(.6f, 0, 0);
 
         }
         else if (!roofChecks[start].roof && !roofChecks[start + 1].roof && !roofChecks[start + 2].roof && roofChecks[start + 3].roof)
         {
             canRoof = false;
-            transform.Translate(-.6f, 0, 0);
+            _transform.Translate(-.6f, 0, 0);
         }
 
     }
@@ -630,15 +581,6 @@ public class Movementscript : MonoBehaviour
         Vector2 direction = new Vector2(horizontal, vertical);
         rb.AddForce(direction * dashForce, ForceMode2D.Impulse);
 
-    }
-    bool isWalled()
-    {
-        if (!_ground && isFacingRight)
-            return wallCheck.isTouching;
-        else if (!_ground && !isFacingRight)
-            return wallCheck2.isTouching;
-        else
-            return false;
     }
     bool isRolled()
     {

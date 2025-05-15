@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class EnvironmentCheck : MonoBehaviour
 {
-    [HideInInspector]public LayerMask canWalk;
-    [HideInInspector] public bool isTouching;
+    [HideInInspector] public LayerMask canWalk { private get; set; }
+     public bool isTouching { get; private set; }
 
     private void OnTriggerStay2D(Collider2D collision)
     {
