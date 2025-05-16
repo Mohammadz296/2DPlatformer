@@ -489,9 +489,9 @@ public class Movementscript : CharacterMovement
         finalSpeed = Mathf.Clamp(speedDiff * targetSpeed, -force, force);
         if (horizontal == -1 && rb.velocity.x >= finalSpeed || horizontal == 1 && rb.velocity.x <= finalSpeed)
         {
-            if (isRolling && isFacingRight && rb.velocity.x > 0 || isRolling && !isFacingRight && rb.velocity.x < 0 || rb.velocity.x == 0 && isFacingRight && horizontal == 1 || rb.velocity.x == 0 && !isFacingRight && horizontal == -1 || !isRolling)
+            if (isRolling && isFacingRight && rb.velocity.x > 0 || isRolling && !isFacingRight && rb.velocity.x < 0 || rb.velocity.x == 0 && isFacingRight && horizontal == 1 || rb.velocity.x == 0 && !isFacingRight && horizontal == -1 || !isRolling)   
                 rb.AddForce(Vector2.right * finalSpeed * acceleration);
-
+            
         }
 
 

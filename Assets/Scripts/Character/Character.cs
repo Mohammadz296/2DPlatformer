@@ -61,7 +61,7 @@ public abstract class Character : MonoBehaviour
 
             if (hp > 0)
                 hp = Mathf.Clamp(hp - dmg, minHp, hp);
-            if (hp == 0f)
+            if (hp == 0f&&!isDead)
                 Death();
 
 
@@ -81,13 +81,18 @@ public abstract class Character : MonoBehaviour
     }
     protected virtual void StartInvulnerable()
     {
+        
     }
     protected virtual void UIBars(float health)
     {
+        
     }
+
     protected virtual void EndInvulnerable()
     {
+        
     }
+   
 
     public IEnumerator Attack(List<Character> enemies)
     {
@@ -113,14 +118,10 @@ public abstract class Character : MonoBehaviour
         reload = false;
 
     }
-    protected virtual void playHurt()
-    {
+    protected abstract void playHurt();
 
-    }
-    protected virtual void GotParried()
-    {
-
-    }
+    protected abstract void GotParried();
+   
     protected void StopImmobilized()
     {
         immobleHitAmountTemp = immobleHitAmount;
@@ -135,34 +136,27 @@ public abstract class Character : MonoBehaviour
         isImmobile = false;
     }
 
-    protected virtual void playAttack()
-    {
+    protected abstract void playAttack();
 
-    }
-    public void Death()
+    public  void Death()
     {
-        if (!isDead)
-        {
+  
             isDead = true;
             StartCoroutine(playDeath());
-        }
-
+        
     }
+
     public IEnumerator ParryTime()
     {
         isParrying = true;
         yield return new WaitForSeconds(parryTime);
         isParrying = false;
     }
-    protected virtual IEnumerator playDeath()
-    {
-        isDead = true;
-        yield return new WaitForSeconds(1f);
-        Destroy(gameObject);
+    protected abstract IEnumerator playDeath();
+    
 
 
-
-    }
+    
     protected IEnumerator pressAttack()
     {
 

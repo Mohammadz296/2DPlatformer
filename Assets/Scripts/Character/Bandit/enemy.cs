@@ -53,7 +53,6 @@ public class enemy : Character
     }
     protected override IEnumerator playDeath()
     {
-        isDead = true;
         animator.ResetTrigger("Hurt");
         animator.ResetTrigger("Attack");
         Physics2D.IgnoreCollision(box, box2, true);

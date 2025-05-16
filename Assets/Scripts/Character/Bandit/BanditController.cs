@@ -1,4 +1,3 @@
-using Pathfinding.Util;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -12,7 +11,7 @@ public class BanditController : CharacterMovement
     public Vector2 distance = Vector2.zero;
     Vector3 localScale;
 
-  
+
 
     [HideInInspector] public bool isFighting = false;
     [HideInInspector] public bool isFollowing = false;
@@ -23,21 +22,24 @@ public class BanditController : CharacterMovement
     Vector3 destination;
 
     float amount;
-    CharacterEvent characterEvent;
+    bool isJumping;
     Vector3 distanceToHome;
     Vector3 home;
     [SerializeField] float waunderDistance;
     bool canWander = true;
     [SerializeField] float wanderTime;
-
+   
+    
+    bool f;
 
     bool _wall;
     enum state
     {
+        idle,
         Moving,
         Fighting,
-        idle,
         Immobilized,
+        death,
         Falling,
         Jumping
     }
@@ -57,10 +59,12 @@ public class BanditController : CharacterMovement
         rb = gameObject.GetComponent<Rigidbody2D>();
         enemy = gameObject.GetComponent<enemy>();
         finalSpeed = speed;
-        characterEvent = transform.GetComponentInChildren<CharacterEvent>();
-        facing = characterEvent.facing;
+        skin = transform.GetComponentInChildren<CharacterEvent>();
+        facing = skin.facing;
         wallCheck.canWalk = canWalk;
-        wallCheck2.canWalk = canWalk;   
+        wallCheck2.canWalk = canWalk;  
+        groundCheck.canWalk = canWalk;
+        gravity=rb.gravityScale;
     }
 
     private void Update()
@@ -71,26 +75,36 @@ public class BanditController : CharacterMovement
             _ground = groundCheck.isTouching;
             _wall = isWalled();
 
+            f = Input.GetKeyDown(KeyCode.F);
             animator.SetBool("Grounded", _ground);
-
+           // animator.SetFloat("AirSpeedY", rb.velocity.y);
+             
             if (distance.x > 0.1)
                 horizontal = 1;
             else if (distance.x < -0.1)
                 horizontal = -1;
             else
                 horizontal = 0;
-            if (rb.velocity.y < 0)
-                status =state.Falling;
             if (enemy.isImmobile)
+            {
                 status = state.Immobilized;
-            else if (isFighting && !enemy.isImmobile)
+            }
+            else if (f && _ground && canJump)
+            {
+                status = state.Jumping;
+            }
+            else if (rb.velocity.y < 0 && !_ground)
+            {
+                status = state.Falling;
+            }
+            else if (isFighting)
+            {
                 status = state.Fighting;
-            else if (isFollowing && !enemy.isImmobile)
-                status = state.Moving;
-            else
-                status = state.idle;
-           
+            }
+          
         }
+        else
+            status=state.death;
     }
 
     void FixedUpdate()
@@ -100,34 +114,49 @@ public class BanditController : CharacterMovement
             switch (status)
             {
                 case state.Moving:
-
+                    ResetBools();
                     MoveTowardsPlayer();
+                    if (!isFollowing)
+                        CheckPosition();
                     break;
                 case state.idle:
-                    Idle();
                     IdleBehaviour();
-
+                    CheckPosition();
                     break;
                 case state.Fighting:
                     playRun();
                     idleStatus = IdleStatus.NewHome;
                     rb.velocity = Vector3.zero;
                     enemy.startAttack();
-
+                    if (!isFighting)
+                        CheckPosition();
                     break;
                 case state.Immobilized:
                     animator.SetInteger("AnimState", 0);
                     break;
                 case state.Jumping:
 
-                    if (canJump)
-                        Jump();
+                    if (canJump)                    
+                       Jump();
+                    
                     MoveTowardsPlayer();
                     if (rb.velocity.y > 0 && rb.velocity.y <= maxMaxThreshold && canMax)
                         MaxHeight();
 
                     if (_ground && rb.velocity.y == 0)
                         CheckPosition();
+                    break;
+                case state.Falling:
+
+                    if (!_ground)
+                    {
+                        Falling();
+                        MoveTowardsPlayer();
+                    }
+                    else
+                        CheckPosition();
+                    break; 
+                    case state.death:
                     break;
             }
 
@@ -141,6 +170,7 @@ public class BanditController : CharacterMovement
     }
     public void MoveTowardsPlayer()
     {
+        rb.bodyType=RigidbodyType2D.Dynamic;
         playRun();
         finalSpeed = Mathf.Clamp(speed * Math.Abs(distance.x), speed, 6);
         rb.velocity = new Vector2(horizontal * finalSpeed, rb.velocity.y);
@@ -154,10 +184,10 @@ public class BanditController : CharacterMovement
     }
     void CheckPosition()
     {
-         if (_ground && horizontal == 0)
-            status = state.idle;
-        else if (_ground && horizontal != 0)
-            status = state.Moving;
+     if(isFollowing &&_ground && !isFighting)
+            status=state.Moving;
+     else if(!isFollowing && _ground&&!isFighting)
+                status = state.idle;    
     }
     
 
@@ -171,8 +201,12 @@ public class BanditController : CharacterMovement
                 break;
             case IdleStatus.Waunder:
                 if (canWander)
+                {
                     Wander();
-
+                    playRun();
+                }
+                else if (rb.velocity.x==0 && _ground)
+                    Idle();
 
                 WaunderValues();
                 if (_wall || Math.Abs(distanceToHome.x) >= homeDistance)
@@ -208,6 +242,7 @@ public class BanditController : CharacterMovement
     }
     void Wander()
     {
+        rb.bodyType = RigidbodyType2D.Dynamic;
         if (Math.Abs(distance.x) <= 0.1f)
         {
             amount = UnityEngine.Random.Range(-waunderDistance, waunderDistance);
@@ -235,11 +270,12 @@ public class BanditController : CharacterMovement
             animator.SetInteger("AnimState", 2);
         else if (isFighting)
             animator.SetInteger("AnimState", 1);
-        else
-            status = state.idle;
+
+
     }
     protected override void ResetBools()
     {
+        canJump = true;
         canMax = true;
         wallSlide = false;
       rb.gravityScale = gravity;

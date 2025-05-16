@@ -646,11 +646,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6eca5e5f73f99e949aa8c8a53b4efe6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpPower: 0
-  maxHeightBoost: 0
-  gravityMax: 0
-  gravityForce: 0
-  maxMaxThreshold: 0
+  jumpPower: 15
+  maxHeightBoost: 5
+  gravityMax: 20
+  gravityForce: 5
+  maxMaxThreshold: 1
   canWalk:
     serializedVersion: 2
     m_Bits: 1536
@@ -719,7 +719,7 @@ CapsuleCollider2D:
   m_GameObject: {fileID: 379003286}
   m_Enabled: 1
   m_Density: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 1f241f8495c253a40ae0ca20b764b849, type: 2}
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
@@ -742,7 +742,6 @@ Transform:
   - {fileID: 1378352367}
   - {fileID: 1216761756}
   - {fileID: 1739737451}
-  - {fileID: 1917271977}
   - {fileID: 523284853}
   - {fileID: 676708714}
   - {fileID: 718250840629366964}
@@ -1140,7 +1139,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 501155983}
   m_LocalRotation: {x: 0, y: 0, z: -0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: 5.2289, y: 0.29, z: 0}
+  m_LocalPosition: {x: 5.2289, y: 0.15, z: 0}
   m_LocalScale: {x: 6.730097, y: 5.5109754, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1404,7 +1403,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 523284853}
-  m_Layer: 6
+  m_Layer: 8
   m_Name: attackStart
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1424,7 +1423,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 379003291}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &577223944
 GameObject:
@@ -2236,7 +2235,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 379003291}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
 --- !u!114 &676708715
 MonoBehaviour:
@@ -3495,7 +3494,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 379003291}
-  m_RootOrder: 8
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1187261717
 GameObject:
@@ -3831,7 +3830,7 @@ CircleCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 631172485}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Density: 1
   m_Material: {fileID: 0}
   m_IsTrigger: 0
@@ -35244,7 +35243,7 @@ EdgeCollider2D:
   m_Enabled: 1
   m_Density: 1
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
@@ -35956,37 +35955,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1912959274}
   m_CullTransparentMesh: 1
---- !u!1 &1917271976
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1917271977}
-  m_Layer: 8
-  m_Name: GameObject
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1917271977
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1917271976}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.938, y: 0.246, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 379003291}
-  m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1920349362
 GameObject:
   m_ObjectHideFlags: 0
@@ -36594,7 +36562,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 379003291}
-  m_RootOrder: 7
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
 --- !u!4 &1259747817771701534
 Transform:
@@ -36725,7 +36693,7 @@ GameObject:
   - component: {fileID: 718250840629366964}
   - component: {fileID: 4399112141755573330}
   - component: {fileID: 4399112141755573331}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: WallCheck2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
