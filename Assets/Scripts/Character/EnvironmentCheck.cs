@@ -8,16 +8,11 @@ public class EnvironmentCheck : MonoBehaviour
     private void OnTriggerStay2D(Collider2D collision)
     {
         if ((canWalk & (1 << collision.gameObject.layer)) != 0)
-        {
             isTouching = true;
-        }
     }
     private void OnTriggerExit2D(Collider2D collision)
     {
         if ((canWalk & (1 << collision.gameObject.layer)) != 0)
-        {
             isTouching = false;
-        }
-
     }
 }

@@ -16,18 +16,23 @@ public class BanditHit : MonoBehaviour
   
     // Update is called once per frame
 
-    private void OnTriggerEnter2D(Collider2D other)
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (other.CompareTag("Player"))
+        if (collision.CompareTag("Player"))
             controller.isFighting = true;
-        if (other.CompareTag("Trail"))
-            other.gameObject.GetComponent<Trail>().Delete();
+    
         
+    }
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Trail"))
+            collision.GetComponent<Trail>().Delete();
     }
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.CompareTag("Player"))        
             controller.isFighting = false;
+       
         
     }
 }

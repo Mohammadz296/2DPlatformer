@@ -15,7 +15,6 @@ public abstract class Character : MonoBehaviour
     public bool isImmobile;
     [SerializeField] protected float attackSpeed = 3;
     [SerializeField] protected Vector2 parryLaunchDist;
-    protected float timer = 0;
     protected float minHp;
     protected bool isDamageable = true;
     public float defense;
@@ -26,7 +25,7 @@ public abstract class Character : MonoBehaviour
     [SerializeField] protected float invincibleTime = .3f;
     [HideInInspector] public bool isDead = false;
     [SerializeField] protected int immobleHitAmount;
-    protected bool successParry;
+    public bool successParry { get; private set; }
     protected int immobleHitAmountTemp;
     protected void Awake()
     {
@@ -61,7 +60,7 @@ public abstract class Character : MonoBehaviour
 
             if (hp > 0)
                 hp = Mathf.Clamp(hp - dmg, minHp, hp);
-            if (hp == 0f&&!isDead)
+            if (hp == 0f && !isDead)
                 Death();
 
 
@@ -72,42 +71,33 @@ public abstract class Character : MonoBehaviour
     }
     protected IEnumerator Invulnerable()
     {
-
         isDamageable = false;
-        StartInvulnerable();
         yield return new WaitForSeconds(invincibleTime);
         isDamageable = true;
-        EndInvulnerable();
     }
-    protected virtual void StartInvulnerable()
-    {
-        
-    }
+ 
     protected virtual void UIBars(float health)
     {
         
     }
-
-    protected virtual void EndInvulnerable()
+    public virtual void Death()
     {
-        
-    }
-   
-
+        StartCoroutine(playDeath());
+    }    
     public IEnumerator Attack(List<Character> enemies)
     {
 
         foreach (Character enemy in enemies)
-            if (!enemy.isDead && isDamageable && !reload)
+            if (!enemy.isDead && enemy.isDamageable && !reload)
             {
                 if (!enemy.isParrying)
                     enemy.takeDamage(atk);
                 else
                 {
-                    enemy.successParry = true;
+                    successParry = true;
                     GotParried();
                     yield return 1;
-                    enemy.successParry = false;
+                    successParry = false;
                 }
 
             }
@@ -138,13 +128,8 @@ public abstract class Character : MonoBehaviour
 
     protected abstract void playAttack();
 
-    public  void Death()
-    {
-  
-            isDead = true;
-            StartCoroutine(playDeath());
-        
-    }
+    
+
 
     public IEnumerator ParryTime()
     {
@@ -152,7 +137,10 @@ public abstract class Character : MonoBehaviour
         yield return new WaitForSeconds(parryTime);
         isParrying = false;
     }
-    protected abstract IEnumerator playDeath();
+    protected virtual IEnumerator playDeath()
+    {
+        yield return null;
+    }
     
 
 

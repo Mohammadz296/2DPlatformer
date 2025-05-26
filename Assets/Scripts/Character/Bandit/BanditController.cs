@@ -5,34 +5,38 @@ using UnityEngine;
 public class BanditController : CharacterMovement
 {
     [SerializeField] float speed;
-    float finalSpeed;
-
     [SerializeField] float homeDistance;
-    public Vector2 distance = Vector2.zero;
-    Vector3 localScale;
-
-
-
+    [SerializeField] float jumpInterval;
+    [SerializeField] float waunderDistance;
+    [SerializeField] float wanderTime;
+    [HideInInspector] public Vector2 distance { private get; set; }
     [HideInInspector] public bool isFighting = false;
-    [HideInInspector] public bool isFollowing = false;
-    enemy enemy;
+    EnemyAnim animE;
+    float finalSpeed;
+    float amount;
+
+    bool canNotMove;
+    bool isJumping;
+    bool canWander = true;
+    bool _wall;
+    bool isDead;
+
+    public bool isFollowing = false;
+
+
+    WaitForSeconds waunderWait;
+    EnemyManager enemy;
+    EnemyAttack enemyAtk;
+    Collider2D bc;
+    Collider2D bc2;
     state status;
     IdleStatus idleStatus;
-
+    Vector3 localScale;
     Vector3 destination;
-
-    float amount;
-    bool isJumping;
     Vector3 distanceToHome;
     Vector3 home;
-    [SerializeField] float waunderDistance;
-    bool canWander = true;
-    [SerializeField] float wanderTime;
-   
-    
-    bool f;
 
-    bool _wall;
+
     enum state
     {
         idle,
@@ -49,147 +53,193 @@ public class BanditController : CharacterMovement
         Tohome,
         Waunder,
     }
+    private void Awake()
+    {
+        CacheValues();
+    }
 
     void Start()
     {
-        wallCheck = transform.Find("WallCheck").GetComponent<EnvironmentCheck>();
-        wallCheck2 = transform.Find("WallCheck2").GetComponent<EnvironmentCheck>();
-        groundCheck = transform.Find("GroundCheck").GetComponent<EnvironmentCheck>();
-        animator = transform.GetComponentInChildren<Animator>();
-        rb = gameObject.GetComponent<Rigidbody2D>();
-        enemy = gameObject.GetComponent<enemy>();
-        finalSpeed = speed;
-        skin = transform.GetComponentInChildren<CharacterEvent>();
-        facing = skin.facing;
-        wallCheck.canWalk = canWalk;
-        wallCheck2.canWalk = canWalk;  
-        groundCheck.canWalk = canWalk;
-        gravity=rb.gravityScale;
+        SetStart();
     }
 
     private void Update()
     {
 
-        if (!enemy.isDead)
-        {
-            _ground = groundCheck.isTouching;
-            _wall = isWalled();
+        _ground = groundCheck.isTouching;
+        _wall = isWalled();
 
-            f = Input.GetKeyDown(KeyCode.F);
-            animator.SetBool("Grounded", _ground);
-           // animator.SetFloat("AirSpeedY", rb.velocity.y);
-             
+
+        
+
+        if (!isDead)
+        {
             if (distance.x > 0.1)
                 horizontal = 1;
             else if (distance.x < -0.1)
                 horizontal = -1;
             else
                 horizontal = 0;
-            if (enemy.isImmobile)
-            {
+            if (enemy.isImobile)
                 status = state.Immobilized;
-            }
-            else if (f && _ground && canJump)
-            {
-                status = state.Jumping;
-            }
-            else if (rb.velocity.y < 0 && !_ground)
-            {
-                status = state.Falling;
-            }
             else if (isFighting)
-            {
                 status = state.Fighting;
-            }
-          
         }
-        else
-            status=state.death;
     }
 
     void FixedUpdate()
     {
-        if (!enemy.isDead)
+
+        switch (status)
         {
-            switch (status)
-            {
-                case state.Moving:
-                    ResetBools();
-                    MoveTowardsPlayer();
-                    if (!isFollowing)
-                        CheckPosition();
-                    break;
-                case state.idle:
-                    IdleBehaviour();
+            case state.Moving:
+                ResetBools();
+                if (!isFollowing)
                     CheckPosition();
-                    break;
-                case state.Fighting:
-                    playRun();
-                    idleStatus = IdleStatus.NewHome;
-                    rb.velocity = Vector3.zero;
-                    enemy.startAttack();
-                    if (!isFighting)
-                        CheckPosition();
-                    break;
-                case state.Immobilized:
-                    animator.SetInteger("AnimState", 0);
-                    break;
-                case state.Jumping:
+                else if (distance.y >= jumpInterval && canJump)
+                    status = state.Jumping;
+                MoveTowardsPlayer();
+                break;
+            case state.idle:
+                CheckPosition();
+                IdleBehaviour();
+                break;
+            case state.Fighting:
 
-                    if (canJump)                    
-                       Jump();
-                    
+                Fight();
+                if (!isFighting)
+                    CheckPosition();
+                break;
+            case state.Immobilized:
+                anim.Move(0);
+                Imobilized();
+                if (!enemy.isImobile)
+                    status = state.idle;
+                break;
+            case state.Jumping:
+                if (canJump && status != state.idle)
+                    Jump();
+
+                MoveTowardsPlayer();
+                if (rb.velocity.y > 0 && rb.velocity.y <= maxMaxThreshold && canMax)
+                    MaxHeight();
+
+                if (_ground && rb.velocity.y == 0)
+                    CheckPosition();
+                break;
+            case state.Falling:
+
+                if (!_ground)
+                {
+                    Falling();
                     MoveTowardsPlayer();
-                    if (rb.velocity.y > 0 && rb.velocity.y <= maxMaxThreshold && canMax)
-                        MaxHeight();
+                }
+                else
+                    CheckPosition();
+                break;
+            case state.death:
+                break;
 
-                    if (_ground && rb.velocity.y == 0)
-                        CheckPosition();
-                    break;
-                case state.Falling:
-
-                    if (!_ground)
-                    {
-                        Falling();
-                        MoveTowardsPlayer();
-                    }
-                    else
-                        CheckPosition();
-                    break; 
-                    case state.death:
-                    break;
-            }
-
-
-            if (isFacingRight && horizontal < 0f || !isFacingRight && horizontal > 0f)
-                Flip();
         }
-        else
-            rb.velocity = Vector3.zero;
+
+
+        if (isFacingRight && horizontal < 0f || !isFacingRight && horizontal > 0f)
+            Flip();
+
 
     }
-    public void MoveTowardsPlayer()
+    void SetStart()
     {
-        rb.bodyType=RigidbodyType2D.Dynamic;
+        wallCheck = _transform.Find("WallCheck").GetComponent<EnvironmentCheck>();
+        wallCheck2 = _transform.Find("WallCheck2").GetComponent<EnvironmentCheck>();
+        groundCheck = _transform.Find("GroundCheck").GetComponent<EnvironmentCheck>();
+        anim = GetComponent<ICharacterAnim>();
+        animE = (EnemyAnim)anim;
+        rb = gameObject.GetComponent<Rigidbody2D>();
+        enemy = gameObject.GetComponent<EnemyManager>();
+        enemyAtk = GetComponent<EnemyAttack>();
+        bc = GetComponent<Collider2D>();
+        bc2 = GameObject.FindGameObjectWithTag("Player").GetComponent<Collider2D>();
+        skin = _transform.GetComponentInChildren<CharacterEvent>();
+        facing = skin.facing;
+        wallCheck.canWalk = canWalk;
+        wallCheck2.canWalk = canWalk;
+        groundCheck.canWalk = canWalk;
+        gravity = rb.gravityScale;
+    }
+    void Fight()
+    {
+        playRun();
+        idleStatus = IdleStatus.NewHome;
+        setTempVector(0, rb.velocity.y);
+        rb.velocity = _tempVector;
+        enemyAtk.ClickAttack();
+
+    }
+    void CacheValues()
+    {
+        waunderWait = new WaitForSeconds(wanderTime);
+        _transform = transform;
+        finalSpeed = speed;
+        distance = Vector2.zero;
+    }
+    void MoveTowardsPlayer()
+    {
+        ResetBools();
         playRun();
         finalSpeed = Mathf.Clamp(speed * Math.Abs(distance.x), speed, 6);
-        rb.velocity = new Vector2(horizontal * finalSpeed, rb.velocity.y);
+        setTempVector(horizontal * finalSpeed, rb.velocity.y);
+        rb.velocity = _tempVector;
 
+    }
+    void Imobilized()
+    {
+        rb.bodyType = RigidbodyType2D.Dynamic;
+        if (rb.velocity.y < 0)
+            canNotMove = true;
+        if (_ground && canNotMove)
+        {
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.velocity = Vector2.zero;
+        }
+
+    }
+    public void Death()
+    {
+        Physics2D.IgnoreCollision(bc, bc2, true);
+        rb.velocity = Vector2.zero;
+        isDead = true;
+        status = state.death;
+        ResetBools();
+        isFighting = false;
+        isFollowing = false;
+        distance = Vector3.zero;
+        idleStatus = IdleStatus.NewHome;
+    }
+    public void Revive()
+    {
+        isDead = false;
+        Physics2D.IgnoreCollision(bc, bc2, false);
+        bc.enabled = true;
+        status = state.idle;
     }
     void NewHome()
     {
 
-        home = transform.position;
+        home = _transform.position;
         destination = Vector3.zero;
     }
     void CheckPosition()
     {
-     if(isFollowing &&_ground && !isFighting)
-            status=state.Moving;
-     else if(!isFollowing && _ground&&!isFighting)
-                status = state.idle;    
+        if (rb.velocity.y < 0 && !_ground)
+            status = state.Falling;
+        else if (isFollowing && _ground && !isFighting)
+            status = state.Moving;
+        else if (!isFollowing && _ground && !isFighting)
+            status = state.idle;
+
     }
-    
+
 
     void IdleBehaviour()
     {
@@ -200,19 +250,25 @@ public class BanditController : CharacterMovement
                 idleStatus = IdleStatus.Waunder;
                 break;
             case IdleStatus.Waunder:
+                if (isFollowing)
+                    CheckPosition();
+                else if (_wall || Math.Abs(distanceToHome.x) >= homeDistance)
+                {
+                    rb.velocity = Vector2.zero;
+                    distance = Vector2.zero;
+                    idleStatus = IdleStatus.Tohome;
+                }
                 if (canWander)
                 {
                     Wander();
                     playRun();
                 }
-                else if (rb.velocity.x==0 && _ground)
+                else if (rb.velocity.x == 0 && _ground)
                     Idle();
-
                 WaunderValues();
-                if (_wall || Math.Abs(distanceToHome.x) >= homeDistance)
-                idleStatus = IdleStatus.Tohome;
-                
-                    break;
+
+
+                break;
             case IdleStatus.Tohome:
                 HomeDistance();
                 destination = Vector3.zero;
@@ -227,7 +283,8 @@ public class BanditController : CharacterMovement
     public void parryDist(Vector2 dist)
     {
         rb.velocity = Vector3.zero;
-        rb.velocity = new Vector2(dist.x * -facing, dist.y);
+        setTempVector(dist.x * -facing, dist.y);
+        rb.velocity = _tempVector;
     }
     void HomeDistance()
     {
@@ -242,43 +299,49 @@ public class BanditController : CharacterMovement
     }
     void Wander()
     {
-        rb.bodyType = RigidbodyType2D.Dynamic;
+        ResetBools();
         if (Math.Abs(distance.x) <= 0.1f)
         {
             amount = UnityEngine.Random.Range(-waunderDistance, waunderDistance);
-            destination = new Vector3(transform.position.x + amount, transform.position.y, transform.position.z);
+            setTempVector(_transform.position.x + amount, _transform.position.y);
+            destination = _tempVector;
 
         }
-        if(canWander)
-        StartCoroutine(WaunderTime());
+        if (canWander)
+            StartCoroutine(WaunderTime());
 
 
     }
     IEnumerator WaunderTime()
     {
         canWander = false;
-        yield return new WaitForSeconds(wanderTime);
+        yield return waunderWait;
         canWander = true;
     }
 
-  
+
 
 
     void playRun()
     {
         if (Math.Abs(rb.velocity.x) > 0.1 && !isFighting)
-            animator.SetInteger("AnimState", 2);
+            anim.Move(2);
         else if (isFighting)
-            animator.SetInteger("AnimState", 1);
+            anim.Move(1);
 
 
     }
     protected override void ResetBools()
     {
-        canJump = true;
-        canMax = true;
+        if (_ground)
+        {
+            canJump = true;
+            canNotMove = false;
+            canMax = true;
+        }
+        rb.bodyType = RigidbodyType2D.Dynamic;
         wallSlide = false;
-      rb.gravityScale = gravity;
+        rb.gravityScale = gravity;
     }
 }
 

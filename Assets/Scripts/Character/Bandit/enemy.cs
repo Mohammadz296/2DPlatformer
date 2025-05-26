@@ -1,6 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class enemy : Character
@@ -21,7 +19,7 @@ public class enemy : Character
         box = gameObject.GetComponent<Collider2D>();
         box2 = GameObject.FindGameObjectWithTag("Player").GetComponent<Collider2D>();
         Physics2D.queriesHitTriggers = false;
-        skin=gameObject.GetComponentInChildren<SpriteRenderer>();
+        skin = gameObject.GetComponentInChildren<SpriteRenderer>();
     }
     private void Update()
     {
@@ -39,8 +37,8 @@ public class enemy : Character
     }
     protected override void GotParried()
     {
-        controller.parryDist(parryLaunchDist);
         StartCoroutine(Immobilized());
+        controller.parryDist(parryLaunchDist); 
     }
     protected override void playHurt()
     {

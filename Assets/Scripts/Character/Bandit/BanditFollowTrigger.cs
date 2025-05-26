@@ -10,37 +10,33 @@ public class BanditFollowTrigger : MonoBehaviour
     public LayerMask mask;
     Transform target;
     [SerializeField] float radius;
+ 
     Transform trailpos;
+    Transform _transform;
     Vector2 distance;
     RaycastHit2D hit;
-    Collider2D[] colliders;
+    Collider2D[] colliders=new Collider2D[15];
     List<Transform> trail = new List<Transform>();
     bool isTrail;
     bool isTarget;
     void Start()
     {
+        _transform=transform;
         bandit = gameObject.transform.parent.gameObject.GetComponent<BanditController>();
 
         Physics2D.queriesHitTriggers = false;
+        InvokeRepeating("Check", 0f, .5f);
+
     }
 
-    // Update is called once per frame
-
-    void Update()
-    {
-        InvokeRepeating("Check", 0f,1f);
     
-
-        Debug.DrawRay(transform.position, distance, Color.red);
-    }
-     
-     void Check()
+    void Check()
     {
 
-        colliders = Physics2D.OverlapCircleAll(transform.position, radius, mask);
-        trail.Clear();
+            trail.Clear();
+        int count = Physics2D.OverlapCircleNonAlloc(_transform.position, radius,colliders);
         target = null;
-        for (int i = 0; i < colliders.Length; i++)
+        for (int i = 0; i < count; i++)
         {
             if (colliders[i].gameObject.CompareTag("Player"))
             {
@@ -50,11 +46,11 @@ public class BanditFollowTrigger : MonoBehaviour
                 trail.Add(colliders[i].gameObject.transform);  
         }
         isTrail = trail.Count > 0;
-        isTarget = target;
+        isTarget = target !=null;
         if (isTrail)
             trailpos = trail[0];
         CheckRayThingy();
-      
+
     }
     void CheckRayThingy()
     {
@@ -65,26 +61,28 @@ public class BanditFollowTrigger : MonoBehaviour
         if(!isTarget&&!isTrail)
             bandit.isFollowing = false;
     }
-    void Targeted(Transform target)
+    void Targeted(Vector2 target)
     {                    
             bandit.isFollowing = true;
-        bandit.distance = distance;
+        bandit.distance = target;
     }
     void TrailRay()
     {
-        distance = trailpos.position - transform.position;
-        Ray(distance, LayerMask.GetMask("trail","ground","grabbable"));
-        if (hit && hit.collider.gameObject.CompareTag("Trail"))  
-            Targeted(trailpos);
-        else
-            bandit.isFollowing = false;
+        
+            distance = trailpos.position - _transform.position;
+            Ray(distance, LayerMask.GetMask("trail", "ground", "grabbable"));
+            if (hit && hit.collider.gameObject.CompareTag("Trail"))
+                Targeted(distance);
+            else
+                bandit.isFollowing = false;
+        
     }
     void TargetRay()
     {
-        distance = target.position - transform.position;
+        distance = target.position - _transform.position;
         Ray(distance, LayerMask.GetMask("player", "ground", "grabbable"));
-        if (hit && hit.collider.gameObject.CompareTag("Player"))  
-            Targeted(target);
+        if (hit&&hit.collider.gameObject.CompareTag("Player"))  
+            Targeted(distance);
         else if (isTrail)
             TrailRay();   
         else
@@ -93,12 +91,20 @@ public class BanditFollowTrigger : MonoBehaviour
     void Ray(Vector2 distance,LayerMask layer)
     {
 
-        hit = Physics2D.Raycast(transform.position, distance.normalized, radius, layer);
+        hit = Physics2D.Raycast(_transform.position, distance.normalized, radius, layer);
 
     }
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, radius);
+        if (_transform)
+        {
+            Gizmos.DrawWireSphere(_transform.position, radius);
+
+        }
+        if(hit)
+            Debug.DrawRay(_transform.position, distance.normalized * radius, Color.red);
+        if(trailpos)
+            Gizmos.DrawWireSphere(trailpos.position, .5f);
     }
 }

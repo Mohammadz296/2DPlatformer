@@ -10,18 +10,20 @@ public abstract class CharacterMovement : MonoBehaviour
     [SerializeField] protected float maxMaxThreshold;
     [SerializeField] protected LayerMask canWalk;
 
-    protected bool _ground;
-    protected bool wallSlide;
+    public bool _ground { get; protected set; }
+    public bool wallSlide { get; protected set; }
+    public int horizontal { get; protected set; }
+
     protected bool isFacingRight=true;
     protected bool canJump = true;
     protected bool canMax = true;
-
-    protected float horizontal;
+    protected Vector2 _tempVector=Vector2.zero;
+   
     protected float facing;
     protected float gravity=0;
 
     protected Rigidbody2D rb;
-    protected Animator animator;
+    protected ICharacterAnim anim;
     protected CharacterEvent skin;
     protected EnvironmentCheck groundCheck;
     protected EnvironmentCheck wallCheck;
@@ -47,19 +49,19 @@ public abstract class CharacterMovement : MonoBehaviour
     }
     protected void Jump()
     {
-        rb.bodyType = RigidbodyType2D.Dynamic;
         ResetBools();
+        rb.bodyType = RigidbodyType2D.Dynamic;
         rb.velocity = new Vector2(rb.velocity.x, 0);
         rb.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
         canJump = false;
-        animator.SetTrigger("Jump");
+        anim.Jump();
     }
     protected void Idle()
     {
+        anim.Move(0);
         ResetBools();
         rb.gravityScale = gravity;
         rb.velocity = Vector2.zero;
-        animator.SetInteger("AnimState", 0);
         rb.bodyType = RigidbodyType2D.Kinematic;
     }
     protected void Flip()
@@ -68,7 +70,7 @@ public abstract class CharacterMovement : MonoBehaviour
         skin.flip();
         facing = skin.facing;
     }
-    protected bool isWalled()
+    protected virtual bool isWalled()
     {
         if ( isFacingRight)
             return wallCheck.isTouching;
@@ -76,6 +78,12 @@ public abstract class CharacterMovement : MonoBehaviour
             return wallCheck2.isTouching;
         else
             return false;
+    }
+    protected void setTempVector(float x, float y)
+    {
+        _tempVector.x = x;
+        _tempVector.y = y;
+
     }
     protected abstract void ResetBools();
 

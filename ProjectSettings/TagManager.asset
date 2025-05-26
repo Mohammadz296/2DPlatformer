@@ -10,6 +10,7 @@ TagManager:
   - Grabbable
   - Background
   - Trail
+  - Spawn
   layers:
   - Default
   - TransparentFX

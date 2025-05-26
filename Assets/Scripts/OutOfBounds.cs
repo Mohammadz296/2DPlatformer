@@ -11,7 +11,7 @@ public class OutOfBounds : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.GetComponentInChildren<Character>())
-            collision.GetComponentInChildren<Character>().Death();
+        if (collision.GetComponentInChildren<CharacterManager>())
+            collision.GetComponentInChildren<CharacterManager>().Death();
     }
 }

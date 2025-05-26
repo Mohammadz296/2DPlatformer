@@ -48,6 +48,7 @@ public class PlayerStats : Character
 
     void SetStart()
     {
+
         sprite = transform.Find("character").GetComponent<SpriteRenderer>();
         animator = transform.Find("character").GetComponent<Animator>();
         controller = GetComponent<Movementscript>();
@@ -60,18 +61,12 @@ public class PlayerStats : Character
         ogHealth = hp;
         ogDefense = defense;
         ResetStats();
+        GameManager.Instance.RespawnEvent += Respawn;
 
 
     }
 
-    protected override void StartInvulnerable()
-    {
-        sprite.color = Color.red;
-    }
-    protected override void EndInvulnerable()
-    {
-        sprite.color = Color.white;
-    }
+    
     protected override void UIBars(float health)
     {
         healthBar.SetValue(hp);
@@ -79,7 +74,7 @@ public class PlayerStats : Character
     }
     protected override void playHurt()
     {
-        StartCoroutine(Invulnerable());
+        animator.SetTrigger("Hurt");
     }
 
     protected override void playAttack()
@@ -129,16 +124,15 @@ public class PlayerStats : Character
         controller.parryDist(parryLaunchDist);
         StartCoroutine(Immobilized());
     }
-    protected override IEnumerator playDeath()
+    public override void Death()
     {
+        StartCoroutine(GameManager.Instance.Death());
         isDead = true;
         animator.SetBool("isDead", isDead);
         animator.SetTrigger("Death");
-        yield return new WaitForSeconds(2f);
-        Respawn();
-
-
     }
+
+   
     private void ResetStats()
     {
         controller.finalStamina = controller.stamina;
@@ -155,7 +149,7 @@ public class PlayerStats : Character
         transform.position = spawner.transform.position;
         isDead = false;
         animator.SetBool("isDead", isDead);
-        controller.Respawn();
+
     }
 }
 

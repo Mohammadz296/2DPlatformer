@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,28 +17,34 @@ public class Movementscript : CharacterMovement
     [SerializeField] float dashTimer;
     [SerializeField] float slopeSpeed;
     [SerializeField] float trailSpawnRate;
-
+    [SerializeField] float trailAmount;
     [SerializeField] GameObject trail;
     [SerializeField] Vector2 wallJumpPower;
     [SerializeField] Vector2 dashForce;
-
+    [SerializeField] Vector2 surrUDLR;
     public bool isRolling { get; private set; }
     [HideInInspector] public float finalStamina;
-   public bool deflected { get; private set; }
+    public bool deflected { get; private set; }
 
 
-    
-    PlayerStats playerPrefs;
 
+    PlayerAttack pa;
     CapsuleCollider2D bc;
     CircleCollider2D bc2;
     EnvironmentManager em;
 
-    Transform rollCheck;
- 
 
-
-    RoofCheck[] roofChecks = new RoofCheck[8];
+    RoofCheck[] roofChecks = new RoofCheck[16];
+    RaycastHit2D hit;
+    EnvironmentCheck rollCheck;
+    PlayerAnim animP;
+    Vector2 slopeNormalPerp;
+    List<InputBuffer> inputs = new();
+    WaitForSeconds _trailSpawnRate;
+    WaitForSeconds _jumpbufferTime;
+    WaitForSeconds _wallJumpTimer;
+    State status;
+    InputBuffer inputBuff;
 
     bool _jump;
     bool _shift;
@@ -49,16 +54,14 @@ public class Movementscript : CharacterMovement
     bool _roll;
     bool _notJump;
 
-
     bool wallJump;
     bool kayote;
     bool isDashing;
     bool isSliding;
-  
+    bool isDead;
     bool waitStamina = true;
     bool canRoof = true;
-    
-    bool canSpawnTrail = true;
+
 
     [field: SerializeField] public float stamina { get; private set; }
     [SerializeField] float rollForce;
@@ -66,18 +69,14 @@ public class Movementscript : CharacterMovement
     float rollTemp;
     float jumpDir;
 
-    float vertical;
+    int vertical;
     float kayoteTimeTemp;
     float dashTimeTemp;
     float drag;
     float timerTemp;
 
 
-    Vector2 slopeNormalPerp;
-    List<InputBuffer> inputs = new();
 
-    State status;
-    InputBuffer inputBuff;
 
     enum State
     {
@@ -91,8 +90,10 @@ public class Movementscript : CharacterMovement
         sloping,
         sliding,
         immobilized,
+        death
 
     }
+
     enum InputBuffer
     {
         none,
@@ -100,192 +101,210 @@ public class Movementscript : CharacterMovement
         roll,
         dash,
     }
+    private void Awake()
+    {
+        CacheValues();
+    }
     void Start()
     {
         SetStart();
+        StartCoroutine(SpawnTrail());
     }
     void Update()
     {
-        if (!playerPrefs.isDead)
+        if (!isDead)
         {
-                     
-            if (canSpawnTrail)
-                StartCoroutine(SpawnTrail());
+
             ReadInput();
+            setInput();
+            KayoteTime();
+            InputBuff();
         }
     }
     private void FixedUpdate()
     {
-        if (!playerPrefs.isDead)
+
+
+        switch (status)
         {
-            switch (status)
-            {
-                case State.jumping:
+            case State.jumping:
+                if (canJump)
+                {
+                    RemoveInputBuff();
+                    Jump();
+                }
+                if (canRoof)
+                    SurroundCheck();
 
-                    if (canJump)
-                    {
-                        RemoveInputBuff();              
-                        Jump();
-                    }
-                    if (canRoof)
-                        RoofCheck(0);
+                RunAir();
+                if (rb.velocity.y > 0 && rb.velocity.y <= maxMaxThreshold && canMax)
+                    MaxHeight();
 
-                    RunAir();
-                    if (rb.velocity.y > 0 && rb.velocity.y <= maxMaxThreshold && canMax)
-                        MaxHeight();
-
-                    if (_ground && rb.velocity.y == 0)                   
-                        CheckPosition();
-                    break;
-                case State.walking:
-                    if (!animator.GetBool("IdleBlock") && playerPrefs.canParry)
-                        Run();
-                    else if (playerPrefs.canParry)
-                        Run(0f);
-                    else
-                        rb.velocity = Vector2.zero;
-                    if (!playerPrefs.click1)
-                        Stamina(30f);
+                if (_ground && rb.velocity.y == 0)
                     CheckPosition();
-                    break;
-                case State.sloping:
-                    RunSlope();
-                    Stamina(10f);
+                break;
+            case State.walking:
+                if (!animP.getBlock() && pa.canParry)
+                    Run();
+                else if (pa.canParry)
+                    Run(0f);
+                else
+                    rb.velocity = Vector2.zero;
+                if (!pa.click1)
+                    Stamina(30f);
+                CheckPosition();
+                break;
+            case State.sloping:
+                RunSlope();
+                Stamina(10f);
+                CheckPosition();
+                break;
+            case State.wallslide:
+
+                if (inputBuff == InputBuffer.jump && _wall && !wallJump)
+                    StartCoroutine(WallJump());
+
+                else if (!wallJump && _wall)
+                    WallSlide();
+                else if (!_wall)
                     CheckPosition();
-                    break;
-                case State.wallslide:
-                    if (!wallJump)
-                        WallSlide();
-                    if (inputBuff == InputBuffer.jump && _wall && !wallJump)
-                    {
-                        jumpDir = -facing;
-                        StartCoroutine(WallJump());
-                    }
-                    if (wallJump)
-                        RunAir(0);
+                if (wallJump)
+                    RunAir(0);
 
-                    else
-                        RunAir();
-                    CheckPosition();
-
-                    break;
-                case State.idle:
-                    Idle();
-                    if (!playerPrefs.click1)
-                        Stamina(80f);
-                    CheckPosition();
-                    break;
-                case State.rolling:
-
-
+                else
                     RunAir();
 
-                    if (_roll)
-                        rollTemp = .1f;
 
-                    if (!isRolling)
-                        Roll();
+                break;
+            case State.idle:
+                Idle();
+                if (!pa.click1)
+                    Stamina(80f);
+                CheckPosition();
+                break;
+            case State.rolling:
 
-                    else if (inputBuff == InputBuffer.jump && _ground)
-                    {
-                        StopRolling();
-                        status = State.jumping;
-                    }
-                    else if (isRolling && rollTemp <= 0)
-                    {
-                        StopRolling();
-                        CheckPosition();
-                    }
 
-                    else if (isRolling && !_roll)
-                        rollTemp = (rollTemp - 1 * Time.deltaTime);
+                RunAir();
 
-                    break;
-                case State.falling:
-                    if (canRoof)
-                        RoofCheck(4);
-                    if (inputBuff==InputBuffer.jump && kayote && canJump)
-                    {
-                        Jump();
-                        status = State.jumping;
-                    }
-                    else if (_ground)
-                        CheckPosition();
+                if (_roll)
+                    rollTemp = .1f;
 
-                    else
-                    {
-                        Falling();
-                        RunAir();
-                    }
-                    break;
-                case State.dashing:
+                if (!isRolling)
+                    Roll();
 
-                    RunAir(.5f);
-                    if (_wall)
-                        rb.velocity = Vector2.zero;
-                    if (!isDashing)
-                        Dash();
-                    if (dashTimeTemp > 0)
-                    {
-                        kayoteTimeTemp = 0;
-                        dashTimeTemp = dashTimeTemp - 1 * Time.deltaTime;
-                    }
-                    else
-                    {
-                        rb.gravityScale = gravity;
-                        isDashing = false;
-                        CheckPosition();
-                    }
-                    break;
-                case State.sliding:
-                    Stamina(40f);
-                    if (_slope)
-                        Sliding();
-                    else if (!_slope)
-                        CheckPosition();
-                    if (inputBuff == InputBuffer.jump && _slope)
-                    {
-                        rb.velocity = new Vector2(rb.velocity.x, 0);
-                        canJump = true;
-                        status = State.jumping;
-                    }
-                    break;
-                case State.immobilized:
-                    break;
+                else if (inputBuff == InputBuffer.jump && _ground)
+                {
+                    StopRolling();
+                    status = State.jumping;
+                }
+                else if (isRolling && rollTemp <= 0)
+                {
+                    StopRolling();
+                    CheckPosition();
+                }
 
-            }
+                else if (isRolling && !_roll)
+                    rollTemp = (rollTemp - 1 * Time.deltaTime);
+
+                break;
+            case State.falling:
+                if (canRoof)
+                    SurroundCheck();
+                if (inputBuff == InputBuffer.jump && kayote && canJump)
+                {
+                    Jump();
+                    status = State.jumping;
+                }
+                else if (_ground)
+                    CheckPosition();
+
+                else
+                {
+                    Falling();
+                    RunAir();
+                }
+                break;
+            case State.dashing:
+                RunAir(.5f);
+                if (_wall)
+                    rb.velocity = Vector2.zero;
+                if (!isDashing)
+                    Dash();
+                if (dashTimeTemp > 0)
+                {
+                    kayoteTimeTemp = 0;
+                    dashTimeTemp = dashTimeTemp - 1 * Time.deltaTime;
+                }
+                else
+                {
+                    rb.gravityScale = gravity;
+                    isDashing = false;
+                    CheckPosition();
+                }
+                break;
+            case State.sliding:
+                Stamina(40f);
+                if (_slope)
+                    Sliding();
+                else if (!_slope)
+                    CheckPosition();
+                if (inputBuff == InputBuffer.jump && _slope)
+                {
+                    rb.velocity = new Vector2(rb.velocity.x, 0);
+                    canJump = true;
+                    status = State.jumping;
+                }
+                break;
+            case State.immobilized:
+                break;
+            case State.death:
+                break;
+
         }
     }
     void SetStart()
     {
-        _transform = transform;
-        animator =_transform.Find("character").GetComponent<Animator>();
+        anim = GetComponent<ICharacterAnim>();
+        animP = (PlayerAnim)anim;
         groundCheck = _transform.Find("groundCheck").GetComponent<EnvironmentCheck>();
-        rollCheck = _transform.Find("rollCheck").transform;
+        rollCheck = _transform.Find("rollCheck").GetComponent<EnvironmentCheck>();
         wallCheck = _transform.Find("wallCheck").GetComponent<EnvironmentCheck>(); ;
         wallCheck2 = _transform.Find("wallCheck2").GetComponent<EnvironmentCheck>(); ;
         em = _transform.GetComponentInChildren<EnvironmentManager>();
         skin = _transform.Find("character").GetComponent<CharacterEvent>();
         bc = GetComponent<CapsuleCollider2D>();
         rb = GetComponent<Rigidbody2D>();
-        playerPrefs = GetComponent<PlayerStats>();
+        pa = GetComponent<PlayerAttack>();
         bc2 = GetComponent<CircleCollider2D>();
-        facing = skin.facing;
 
+        facing = skin.facing;
         groundCheck.canWalk = canWalk;
-        wallCheck.canWalk=canWalk;
-        wallCheck2.canWalk=canWalk;
-        rollTemp = rollTime;
-        finalStamina = stamina;
+        wallCheck.canWalk = canWalk;
+        wallCheck2.canWalk = canWalk;
+        rollCheck.canWalk = canWalk;
         drag = rb.drag;
         gravity = rb.gravityScale;
-        kayoteTimeTemp = kayoteTime;
-        timerTemp = staminaWaitTime;
 
         for (int i = 0; i < roofChecks.Length; i++)
             roofChecks[i] = _transform.Find("RoofHitCheck").gameObject.transform.GetChild(i).transform.GetComponent<RoofCheck>();
+        GameManager.Instance.RespawnEvent += Respawn;
+        GameManager.Instance.DeathEvent += Death;
 
 
+    }
+    void CacheValues()
+    {
+        _transform = transform;
+        _jumpbufferTime = new WaitForSeconds(jumpBufferTime);
+        _trailSpawnRate = new WaitForSeconds(trailSpawnRate);
+        _wallJumpTimer = new WaitForSeconds(wallJumpTimer);
+
+
+        rollTemp = rollTime;
+        finalStamina = stamina;
+        kayoteTimeTemp = kayoteTime;
+        timerTemp = staminaWaitTime;
     }
 
     void ReadInput()
@@ -311,14 +330,19 @@ public class Movementscript : CharacterMovement
         if (isFacingRight && horizontal < 0f && !isRolling && !isSliding || !isFacingRight && horizontal > 0f && !isRolling && !isSliding)
             Flip();
 
-        animator.SetBool("Rolling", isRolling);
-        animator.SetBool("Grounded", _ground);
-        animator.SetFloat("AirSpeedY", rb.velocity.y);
-        animator.SetBool("WallSlide", _wall);
 
 
-        horizontal = Input.GetAxisRaw("Horizontal");
-        vertical = Input.GetAxisRaw("Vertical");
+
+
+
+
+
+    }
+    void setInput()
+    {
+
+        horizontal = (int)Input.GetAxisRaw("Horizontal");
+        vertical = (int)Input.GetAxisRaw("Vertical");
         _jump = Input.GetButtonDown("Jump");
         _notJump = Input.GetButtonUp("Jump");
         _s = Input.GetKeyDown(KeyCode.S);
@@ -328,23 +352,20 @@ public class Movementscript : CharacterMovement
         _slope = isSlope();
         _ground = groundCheck.isTouching || isSlope();
         _wall = isWalled();
-        _roll = isRolled();
+        _roll = rollCheck.isTouching;
 
         em.xVel = rb.velocity.normalized.x;
         em.yVel = rb.velocity.normalized.y;
 
-
-        KayoteTime();
-        InputBuff();
-
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("player"), LayerMask.NameToLayer("enemy"), isRolling || isDashing);
-
     }
     public void parryDist(Vector2 dist)
     {
         rb.velocity = Vector2.zero;
-        rb.AddForce(new Vector2(dist.x * -facing, dist.x));
+        setTempVector(dist.x * -facing, dist.y);
+        rb.AddForce(_tempVector);
     }
+
     void CheckPosition()
     {
         if (_wall && !_ground && !wallJump && !wallSlide)
@@ -360,8 +381,8 @@ public class Movementscript : CharacterMovement
     }
     protected override void ResetBools()
     {
-        if(!_ground&&status==State.jumping)
-        kayoteTimeTemp = 0;
+        if (!_ground && status == State.jumping)
+            kayoteTimeTemp = 0;
         canMax = true;
         if (!_slope || _slope && isSliding)
             canJump = true;
@@ -372,7 +393,7 @@ public class Movementscript : CharacterMovement
         isSliding = false;
         StopRolling();
 
-     
+
         rb.gravityScale = gravity;
         rb.drag = drag;
     }
@@ -386,7 +407,7 @@ public class Movementscript : CharacterMovement
     }
     IEnumerator InputBuffTimer()
     {
-        yield return new WaitForSeconds(jumpBufferTime);
+        yield return _jumpbufferTime;
         RemoveInputBuff();
     }
     void InputBuff()
@@ -396,7 +417,7 @@ public class Movementscript : CharacterMovement
             inputs.Add(InputBuffer.jump);
             StartCoroutine(InputBuffTimer());
         }
-        if (_s&&_ground|| _s && _slope)
+        if (_s && _ground || _s && _slope)
         {
             inputs.Add(InputBuffer.roll);
             StartCoroutine(InputBuffTimer());
@@ -412,7 +433,7 @@ public class Movementscript : CharacterMovement
             inputBuff = InputBuffer.none;
 
     }
-  
+
     void KayoteTime()
     {
         if (_ground)
@@ -429,7 +450,7 @@ public class Movementscript : CharacterMovement
             kayote = false;
 
     }
-   
+
     void Roll()
     {
         Stamina(-1500f);
@@ -442,7 +463,7 @@ public class Movementscript : CharacterMovement
         bc.enabled = false;
         bc2.enabled = true;
 
-        animator.SetTrigger("Roll");
+        animP.Roll();
 
         rb.AddForce(Vector2.right * (facing * rollForce), ForceMode2D.Impulse);
     }
@@ -457,11 +478,23 @@ public class Movementscript : CharacterMovement
     void Sliding()
     {
         RemoveInputBuff();
-        if (facing != Math.Round(rb.velocity.normalized.x))
+        if (facing != Mathf.Round(rb.velocity.normalized.x))
             Flip();
         rb.bodyType = RigidbodyType2D.Dynamic;
         isSliding = true;
         IncGravity();
+    }
+    void SurroundCheck()
+    {
+        if (rb.velocity.y > 0)
+            RoofCheck(0, surrUDLR.x, -surrUDLR.y, -surrUDLR.x, -surrUDLR.y);
+        else if (rb.velocity.y < 0 && rb.gravityScale == gravityMax)
+            RoofCheck(4, surrUDLR.x, -surrUDLR.y, -surrUDLR.x, -surrUDLR.y);
+
+        if (rb.velocity.x > 0)
+            RoofCheck(8, -surrUDLR.y, surrUDLR.x, -surrUDLR.y, -surrUDLR.x);
+        else if (rb.velocity.x < 0)
+            RoofCheck(12, surrUDLR.y, surrUDLR.x, surrUDLR.y, -surrUDLR.x);
     }
     void Run(float speedLerpThingy = 1)
     {
@@ -471,27 +504,19 @@ public class Movementscript : CharacterMovement
         rb.velocity = Vector2.right * horizontal * force;
         PlayRun();
     }
-    void PlayRun()
-    {
-        if (Math.Abs(horizontal) > 0.1)
-            animator.SetInteger("AnimState", 1);
 
-        else if (horizontal == 0 && _ground)
-            status = State.idle;
-    }
     void RunAir(float speedLerpThingy = 1)
     {
         float finalSpeed;
         float force = Mathf.Lerp(minSpeed, airSpeed, speedLerpThingy);
         rb.bodyType = RigidbodyType2D.Dynamic;
         float targetSpeed = horizontal * force;
-        float speedDiff = Math.Abs(targetSpeed - rb.velocity.x);
+        float speedDiff = Mathf.Abs(targetSpeed - rb.velocity.x);
         finalSpeed = Mathf.Clamp(speedDiff * targetSpeed, -force, force);
         if (horizontal == -1 && rb.velocity.x >= finalSpeed || horizontal == 1 && rb.velocity.x <= finalSpeed)
         {
-            if (isRolling && isFacingRight && rb.velocity.x > 0 || isRolling && !isFacingRight && rb.velocity.x < 0 || rb.velocity.x == 0 && isFacingRight && horizontal == 1 || rb.velocity.x == 0 && !isFacingRight && horizontal == -1 || !isRolling)   
+            if (isRolling && isFacingRight && rb.velocity.x > 0 || isRolling && !isFacingRight && rb.velocity.x < 0 || rb.velocity.x == 0 && isFacingRight && horizontal == 1 || rb.velocity.x == 0 && !isFacingRight && horizontal == -1 || !isRolling)
                 rb.AddForce(Vector2.right * finalSpeed * acceleration);
-            
         }
 
 
@@ -501,35 +526,52 @@ public class Movementscript : CharacterMovement
         float force = Mathf.Lerp(minSpeed, slopeSpeed, speedLerpThingy);
         rb.drag = drag;
         rb.bodyType = RigidbodyType2D.Dynamic;
-        rb.AddForce(new Vector2(slopeSpeed * slopeNormalPerp.x * -horizontal, force * slopeNormalPerp.y * -horizontal));
+
+        rb.AddForce(force * slopeNormalPerp * -horizontal);
         PlayRun();
+    }
+    void PlayRun()
+    {
+        if (Mathf.Abs(horizontal) > 0.1)
+            anim.Move(horizontal);
+
+        else if (horizontal == 0 && _ground)
+            status = State.idle;
     }
     IEnumerator SpawnTrail()
     {
-        canSpawnTrail = false;
-        Instantiate(trail, _transform.position, Quaternion.identity);
-        yield return new WaitForSeconds(trailSpawnRate);
-        canSpawnTrail = true;
+        for (int i = 0; i < trailAmount;)
+        {
+
+            Instantiate(trail, _transform.position, Quaternion.identity);
+            yield return _trailSpawnRate;
+            i++;
+
+        }
+
     }
     void WallSlide()
     {
         rb.gravityScale = gravity;
         isDashing = false;
-        animator.SetTrigger("WallSlide");
-        rb.velocity = new Vector2(rb.velocity.x, Math.Clamp(rb.velocity.y, -wallG, float.MaxValue));
+        animP.WallSlide();
+        setTempVector(rb.velocity.x, Mathf.Clamp(rb.velocity.y, -wallG, jumpPower));
+        rb.velocity = _tempVector;
         wallSlide = true;
+
     }
     IEnumerator WallJump()
     {
+        wallJump = true;
         jumpDir = -facing;
         RemoveInputBuff();
         rb.gravityScale = gravity;
         rb.velocity = Vector2.zero;
-        rb.AddForce(new Vector2(rb.velocity.x + (jumpDir * wallJumpPower.x), wallJumpPower.y), ForceMode2D.Impulse);
+        setTempVector(rb.velocity.x + (jumpDir * wallJumpPower.x), rb.velocity.y + wallJumpPower.y);
+        rb.AddForce(_tempVector, ForceMode2D.Impulse);
         if (facing != jumpDir)
             Flip();
-        wallJump = true;
-        yield return new WaitForSeconds(wallJumpTimer);
+        yield return _wallJumpTimer;
         wallJump = false;
 
     }
@@ -553,18 +595,18 @@ public class Movementscript : CharacterMovement
             finalStamina = Mathf.Clamp(finalStamina + amount * Time.deltaTime, 0, stamina);
         }
     }
-    void RoofCheck(int start)
+    void RoofCheck(int start, float x1, float y1, float x2, float y2)
     {
         if (roofChecks[start].roof && !roofChecks[start + 1].roof && !roofChecks[start + 2].roof && !roofChecks[start + 3].roof)
         {
             canRoof = false;
-            _transform.Translate(.6f, 0, 0);
+            _transform.Translate(x1, y1, _transform.position.z);
 
         }
         else if (!roofChecks[start].roof && !roofChecks[start + 1].roof && !roofChecks[start + 2].roof && roofChecks[start + 3].roof)
         {
             canRoof = false;
-            _transform.Translate(-.6f, 0, 0);
+            _transform.Translate(x2, y2, _transform.position.z);
         }
 
     }
@@ -578,26 +620,22 @@ public class Movementscript : CharacterMovement
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.gravityScale = 0;
         rb.velocity = Vector2.zero;
-        Vector2 direction = new Vector2(horizontal, vertical);
+        setTempVector(horizontal, vertical);
+        Vector2 direction = _tempVector;
         rb.AddForce(direction * dashForce, ForceMode2D.Impulse);
 
     }
-    bool isRolled()
-    {
 
-        return Physics2D.OverlapCircle(rollCheck.position, .1f, canWalk);
-    }
 
     bool isSlope()
     {
 
-        RaycastHit2D hit = Physics2D.Raycast(groundCheck.gameObject.transform.position, Vector2.down, 0.5f, LayerMask.GetMask("Slope"));
+        hit = Physics2D.Raycast(groundCheck.gameObject.transform.position, Vector2.down, 0.5f, LayerMask.GetMask("Slope"));
 
         if (hit)
         {
             Debug.DrawRay(hit.point, slopeNormalPerp, Color.green);
             slopeNormalPerp = Vector2.Perpendicular(hit.normal).normalized;
-
 
             return hit;
 
@@ -607,7 +645,7 @@ public class Movementscript : CharacterMovement
     }
     bool wallSlope()
     {
-        RaycastHit2D hit;
+
         hit = Physics2D.Raycast(wallCheck.gameObject.transform.position, Vector2.left, .5f, LayerMask.GetMask("Slope"));
         if (hit)
             return true;
@@ -616,17 +654,26 @@ public class Movementscript : CharacterMovement
             return true;
         return false;
     }
-    public void Respawn()
+    void Death()
     {
+        isDead = true;
+    }
+    void Respawn()
+    {
+        isDead = false;
         ResetBools();
         status = State.idle;
         inputs.Clear();
     }
-
-    private void OnDrawGizmos()
+    protected override bool isWalled()
     {
-
-        if (bc && groundCheck)
-            Gizmos.DrawWireCube(groundCheck.gameObject.transform.position, new Vector2(bc.size.x, 0.1f));
+        if (isFacingRight && !_ground)
+            return wallCheck.isTouching;
+        else if (!isFacingRight && !_ground)
+            return wallCheck2.isTouching;
+        else
+            return false;
     }
+
+
 }

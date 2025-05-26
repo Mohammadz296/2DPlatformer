@@ -1,17 +1,25 @@
 using System.Collections;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Trail : MonoBehaviour
 {
     [SerializeField] float lifeTime;
-    IEnumerator Start()
+    Transform _transform;
+    Transform target;
+    void Start()
     {
-        yield return new WaitForSeconds(lifeTime);
-        Delete();
+
+        _transform = transform;
+        target = GameObject.FindGameObjectWithTag("Player").transform;
+        InvokeRepeating("Delete", 0, lifeTime);
     }
-    public void Delete()
+     public void Delete()
     {
-        Destroy(gameObject);
+        _transform.position=target.position;
     }
+   
+
 
 }

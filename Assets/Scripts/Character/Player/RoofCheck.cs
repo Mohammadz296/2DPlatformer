@@ -1,10 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class RoofCheck : MonoBehaviour
 {
-    public bool roof;
+    [HideInInspector] public bool roof { get; private set; }
     [SerializeField] Vector2 dir;
     public void Update()
     {
@@ -12,7 +10,7 @@ public class RoofCheck : MonoBehaviour
     }
     bool isRoofed()
     {
-        return Physics2D.Raycast(transform.position, dir, .5f, LayerMask.GetMask("Ground"));
+        return Physics2D.Raycast(transform.position, dir, .5f, LayerMask.GetMask("Ground","grabbable"));
     }
 
 }
