@@ -717,10 +717,10 @@ GameObject:
   - component: {fileID: 379003290}
   - component: {fileID: 379003289}
   - component: {fileID: 379003287}
-  - component: {fileID: 379003294}
   - component: {fileID: 379003293}
   - component: {fileID: 379003292}
   - component: {fileID: 379003295}
+  - component: {fileID: 379003296}
   m_Layer: 8
   m_Name: Enemy
   m_TagString: Enemy
@@ -827,7 +827,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 126f43a0741bf984e82268ad27bd54ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  horizontal: 0
 --- !u!114 &379003293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -840,7 +839,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86b8602fe67de2d488ae9c85a4c126c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lives: 0
+  lives: 1
   isDead: 0
   isDamageable: 0
   isImobile: 0
@@ -851,21 +850,6 @@ MonoBehaviour:
   parryLaunchDist: {x: 6, y: 6}
   invincibleTime: 0.5
   immobleHitAmountTemp: 0
-  isReviving: 0
---- !u!114 &379003294
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 379003286}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e704928a81db4c541b580649910ca498, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  <hp>k__BackingField: 100
-  <defense>k__BackingField: 40
 --- !u!114 &379003295
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -882,6 +866,21 @@ MonoBehaviour:
   atk: 10
   attackSpeed: 1
   <range>k__BackingField: 0.5
+--- !u!114 &379003296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 379003286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab32409575bbcde4c8ac7b5e9093f2f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  <hp>k__BackingField: 100
+  <defense>k__BackingField: 40
+  recoveryHp: 20
 --- !u!1 &400850482
 GameObject:
   m_ObjectHideFlags: 0
@@ -2251,10 +2250,10 @@ GameObject:
   - component: {fileID: 1467043917}
   - component: {fileID: 1467043915}
   - component: {fileID: 1467043914}
-  - component: {fileID: 1467043921}
   - component: {fileID: 1467043920}
   - component: {fileID: 1467043919}
   - component: {fileID: 1467043922}
+  - component: {fileID: 1467043923}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -4314,20 +4313,6 @@ MonoBehaviour:
   attackSpeed: 0.3
   <range>k__BackingField: 1
   parryOffTime: 0.5
---- !u!114 &1467043921
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 631172485}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e704928a81db4c541b580649910ca498, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  <hp>k__BackingField: 100
-  <defense>k__BackingField: 20
 --- !u!114 &1467043922
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4340,6 +4325,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a05c124325ba01b4db822ddf2b337005, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1467043923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 631172485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c92e667cf83aba4ea4adb8c8d6b2af5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  <hp>k__BackingField: 100
+  <defense>k__BackingField: 20
 --- !u!1 &1480035882
 GameObject:
   m_ObjectHideFlags: 0
