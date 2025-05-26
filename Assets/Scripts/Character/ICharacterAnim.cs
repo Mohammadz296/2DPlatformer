@@ -1,4 +1,7 @@
 
+using System;
+using System.Globalization;
+
 public interface  ICharacterAnim
 {
     public void Immobile();
@@ -8,3 +11,4 @@ public interface  ICharacterAnim
     public void Death();
     public void Jump();
 }
+

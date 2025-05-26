@@ -22,8 +22,8 @@ public class Movementscript : CharacterMovement
     [SerializeField] Vector2 wallJumpPower;
     [SerializeField] Vector2 dashForce;
     [SerializeField] Vector2 surrUDLR;
-    public bool isRolling { get; private set; }
     [HideInInspector] public float finalStamina;
+    public bool isRolling { get; private set; }
     public bool deflected { get; private set; }
 
 
@@ -33,7 +33,7 @@ public class Movementscript : CharacterMovement
     CircleCollider2D bc2;
     EnvironmentManager em;
 
-
+    SliderScript staminaBar;
     RoofCheck[] roofChecks = new RoofCheck[16];
     RaycastHit2D hit;
     EnvironmentCheck rollCheck;
@@ -277,7 +277,9 @@ public class Movementscript : CharacterMovement
         rb = GetComponent<Rigidbody2D>();
         pa = GetComponent<PlayerAttack>();
         bc2 = GetComponent<CircleCollider2D>();
+        staminaBar = GameObject.Find("StaminaBar").GetComponent<SliderScript>();
 
+        staminaBar.SetMaxValue(stamina);
         facing = skin.facing;
         groundCheck.canWalk = canWalk;
         wallCheck.canWalk = canWalk;
@@ -594,6 +596,7 @@ public class Movementscript : CharacterMovement
 
             finalStamina = Mathf.Clamp(finalStamina + amount * Time.deltaTime, 0, stamina);
         }
+        staminaBar.SetValue(finalStamina);  
     }
     void RoofCheck(int start, float x1, float y1, float x2, float y2)
     {

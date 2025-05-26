@@ -46,6 +46,7 @@ public class EnemyAnim : MonoBehaviour,ICharacterAnim
     {
         animator.ResetTrigger("Hurt");
         animator.ResetTrigger("Attack");
+        animator.ResetTrigger("Recover");
         animator.SetTrigger("Death");
     }
     public void Revive()

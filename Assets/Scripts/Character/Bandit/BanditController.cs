@@ -219,9 +219,8 @@ public class BanditController : CharacterMovement
     public void Revive()
     {
         isDead = false;
-        Physics2D.IgnoreCollision(bc, bc2, false);
-        bc.enabled = true;
         status = state.idle;
+        Physics2D.IgnoreCollision(bc, bc2, false);
     }
     void NewHome()
     {

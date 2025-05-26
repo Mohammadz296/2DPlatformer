@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class PlayerHealth : CharacterHealth
 {
+    SliderScript healthBar;
+    SliderScript defenseBar;
     float ogHp;
     float ogDef;
     private void Awake()
@@ -15,10 +17,24 @@ public class PlayerHealth : CharacterHealth
     {
         base.Start();
         GameManager.Instance.RespawnEvent += Respawn;
-        
+       healthBar= GameObject.Find("HealthBar").GetComponent<SliderScript>();
+       defenseBar= GameObject.Find("DefenseBar").GetComponent<SliderScript>();
+        resetBars();
+    }
+    public override void TakeDamage(float dmg)
+    {
+        base.TakeDamage(dmg);
+        healthBar.SetValue(hp);
+        defenseBar.SetValue(defense);   
 
     }
-    
+    void resetBars()
+    {
+        healthBar.SetMaxValue(hp);
+        defenseBar.SetMaxValue(defense);    
+    }
+
+
     public override void Death()
     {
         StartCoroutine(GameManager.Instance.Death());
@@ -27,6 +43,7 @@ public class PlayerHealth : CharacterHealth
     {
         hp=ogHp;
         defense=ogDef;  
+        resetBars();
     }
 
 }

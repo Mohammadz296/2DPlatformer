@@ -14,7 +14,7 @@ public class EnemyManager : CharacterManager
     {
         base.Awake();
         DeathWait = new WaitForSeconds(1);
-        RevWait = new WaitForSeconds(.5f);
+        RevWait = new WaitForSeconds(1);
     }
     private void Start()
     {
@@ -29,10 +29,9 @@ public class EnemyManager : CharacterManager
     }
     public override void Death()
     {
-
+        controller.Death();
         isDead = true;
         anim.Death();
-        controller.Death();
         if (lives != 0)
         {
             lives--;
@@ -55,10 +54,9 @@ public class EnemyManager : CharacterManager
         yield return DeathWait;
         anim.Revive();
         yield return RevWait ;
-        controller.Revive();
         isDead = false;
+        controller.Revive();
         hp.Respawn();
-        anim.Revive();
     }
 
 }

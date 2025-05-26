@@ -4,7 +4,7 @@ using UnityEngine;
 public abstract class CharacterManager : MonoBehaviour
 {
     [SerializeField] protected int lives;
-    [HideInInspector] public bool isDead;
+ public bool isDead;
     [HideInInspector] public bool isDamageable;
     [HideInInspector] public bool isImobile;
     [HideInInspector] public bool isParrying;
@@ -12,11 +12,11 @@ public abstract class CharacterManager : MonoBehaviour
     [HideInInspector] public bool isShielding;
     protected WaitForSeconds immobileWait;
     protected WaitForSeconds invulnerableWait;
-    [SerializeField] public int immobleHitAmount { get; private set; }
+    [field: SerializeField] public int immobleHitAmount { get; private set; }
     [SerializeField] float immobileTime;
     [SerializeField] protected Vector2 parryLaunchDist;
     [SerializeField] protected float invincibleTime;
-    public int immobleHitAmountTemp;
+    [HideInInspector]public int immobleHitAmountTemp;
 
 
     protected virtual void Awake()

@@ -70,7 +70,7 @@ public class BanditFollowTrigger : MonoBehaviour
     {
         
             distance = trailpos.position - _transform.position;
-            Ray(distance, LayerMask.GetMask("trail", "ground", "grabbable"));
+            Ray(distance, LayerMask.GetMask("trail", "Ground", "grabbable","Slope"));
             if (hit && hit.collider.gameObject.CompareTag("Trail"))
                 Targeted(distance);
             else
@@ -80,7 +80,7 @@ public class BanditFollowTrigger : MonoBehaviour
     void TargetRay()
     {
         distance = target.position - _transform.position;
-        Ray(distance, LayerMask.GetMask("player", "ground", "grabbable"));
+        Ray(distance, LayerMask.GetMask("player", "Ground", "grabbable","Slope"));
         if (hit&&hit.collider.gameObject.CompareTag("Player"))  
             Targeted(distance);
         else if (isTrail)
