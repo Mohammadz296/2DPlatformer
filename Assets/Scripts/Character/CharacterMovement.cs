@@ -9,6 +9,7 @@ public abstract class CharacterMovement : MonoBehaviour
     [SerializeField] protected float gravityForce;
     [SerializeField] protected float maxMaxThreshold;
     [SerializeField] protected LayerMask canWalk;
+    [SerializeField] protected float kayoteTime;
 
     public bool _ground { get; protected set; }
     public bool wallSlide { get; protected set; }
@@ -56,6 +57,8 @@ public abstract class CharacterMovement : MonoBehaviour
         canJump = false;
         anim.Jump();
     }
+
+
     protected void Idle()
     {
         anim.Move(0);

@@ -3,14 +3,12 @@ using UnityEngine;
 public class PlayerManager : CharacterManager
 {
     Movementscript controller;
-    Transform spawner;
      void Start()
     {
-       
         controller = GetComponent<Movementscript>();
-        spawner = GameObject.FindGameObjectWithTag("Spawn").transform;
         GameManager.Instance.RespawnEvent += Respawn;
-        GameManager.Instance.DeathEvent += Death;   
+        GameManager.Instance.DeathEvent += Death;
+        Respawn();
     }
     public override void GotParried()
     {
@@ -27,7 +25,7 @@ public class PlayerManager : CharacterManager
     {
         
             Reset();
-            transform.position = spawner.position;
+            transform.position = GameObject.FindGameObjectWithTag("Spawn").transform.position;
             isDead = false;
 
         

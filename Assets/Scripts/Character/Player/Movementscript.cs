@@ -8,7 +8,6 @@ public class Movementscript : CharacterMovement
     [SerializeField] float airSpeed;
     [SerializeField] float wallG;
     [SerializeField] float rollTime;
-    [SerializeField] float kayoteTime;
     [SerializeField] float acceleration;
     [SerializeField] float jumpBufferTime;
     [SerializeField] float wallJumpTimer;
@@ -53,9 +52,8 @@ public class Movementscript : CharacterMovement
     bool _s;
     bool _roll;
     bool _notJump;
-
-    bool wallJump;
     bool kayote;
+    bool wallJump;
     bool isDashing;
     bool isSliding;
     bool isDead;
@@ -70,11 +68,10 @@ public class Movementscript : CharacterMovement
     float jumpDir;
 
     int vertical;
-    float kayoteTimeTemp;
     float dashTimeTemp;
     float drag;
     float timerTemp;
-
+    float kayoteTimeTemp;
 
 
 
@@ -117,7 +114,6 @@ public class Movementscript : CharacterMovement
 
             ReadInput();
             setInput();
-            KayoteTime();
             InputBuff();
         }
     }
@@ -209,6 +205,7 @@ public class Movementscript : CharacterMovement
 
                 break;
             case State.falling:
+                KayoteTime();
                 if (canRoof)
                     SurroundCheck();
                 if (inputBuff == InputBuffer.jump && kayote && canJump)
@@ -383,8 +380,8 @@ public class Movementscript : CharacterMovement
     }
     protected override void ResetBools()
     {
-        if (!_ground && status == State.jumping)
-            kayoteTimeTemp = 0;
+        kayoteTimeTemp = kayoteTime;
+        kayote = false;
         canMax = true;
         if (!_slope || _slope && isSliding)
             canJump = true;
@@ -436,14 +433,12 @@ public class Movementscript : CharacterMovement
 
     }
 
-    void KayoteTime()
+     void KayoteTime()
     {
-        if (_ground)
-            kayoteTimeTemp = kayoteTime;
 
-        if (!kayote && !_ground && kayoteTimeTemp > 0 && !wallSlide)
+        if (!kayote && kayoteTimeTemp > 0 && !wallSlide)
             kayote = true;
-        else if (kayoteTimeTemp > 0 && !wallSlide && !_ground)
+        else if (kayoteTimeTemp > 0)
         {
             kayote = true;
             kayoteTimeTemp = kayoteTimeTemp - 1 * Time.deltaTime;
@@ -452,7 +447,6 @@ public class Movementscript : CharacterMovement
             kayote = false;
 
     }
-
     void Roll()
     {
         Stamina(-1500f);
@@ -554,6 +548,8 @@ public class Movementscript : CharacterMovement
     }
     void WallSlide()
     {
+        kayote = false;
+        kayoteTimeTemp = 0;
         rb.gravityScale = gravity;
         isDashing = false;
         animP.WallSlide();
@@ -618,6 +614,8 @@ public class Movementscript : CharacterMovement
         Stamina(-1980f);
         RemoveInputBuff();
         isRolling = false;
+        kayoteTime = 0;
+        kayote = false;
         dashTimeTemp = dashTimer;
         isDashing = true;
         rb.bodyType = RigidbodyType2D.Dynamic;

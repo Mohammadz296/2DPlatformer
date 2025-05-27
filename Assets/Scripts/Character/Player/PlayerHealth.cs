@@ -8,7 +8,7 @@ public class PlayerHealth : CharacterHealth
     SliderScript defenseBar;
     float ogHp;
     float ogDef;
-    private void Awake()
+      void Awake()
     {
         ogHp = hp;
         ogDef = defense;

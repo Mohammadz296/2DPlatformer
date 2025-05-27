@@ -10,7 +10,8 @@ public class BanditController : CharacterMovement
     [SerializeField] float waunderDistance;
     [SerializeField] float wanderTime;
     [HideInInspector] public Vector2 distance { private get; set; }
-    [HideInInspector] public bool isFighting = false;
+    [HideInInspector] public bool isFighting;
+    [HideInInspector] public bool isFollowing;
     EnemyAnim animE;
     float finalSpeed;
     float amount;
@@ -21,7 +22,6 @@ public class BanditController : CharacterMovement
     bool _wall;
     bool isDead;
 
-    public bool isFollowing = false;
 
 
     WaitForSeconds waunderWait;
@@ -70,7 +70,7 @@ public class BanditController : CharacterMovement
         _wall = isWalled();
 
 
-        
+
 
         if (!isDead)
         {
@@ -128,14 +128,16 @@ public class BanditController : CharacterMovement
                     CheckPosition();
                 break;
             case state.Falling:
-
-                if (!_ground)
-                {
-                    Falling();
-                    MoveTowardsPlayer();
-                }
-                else
+                if (_ground)
                     CheckPosition();
+                if (canJump && isFollowing)
+                {
+                    Jump();
+                    status = state.Jumping;
+                }
+                Falling();
+                MoveTowardsPlayer();
+
                 break;
             case state.death:
                 break;

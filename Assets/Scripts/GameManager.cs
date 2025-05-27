@@ -7,6 +7,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
     public event Action DeathEvent;
     public event Action RespawnEvent;
+    public event Action SpawnEvent;
     public event Action pause;
     public event Action resume;
     [SerializeField] float respawnTime;
@@ -39,6 +40,10 @@ public class GameManager : MonoBehaviour
     {
         state = GameStates.Respawn;
         RespawnEvent?.Invoke();
+    }
+    public void Spawn()
+    {
+        SpawnEvent?.Invoke();
     }
     private void Pause()
     {
